@@ -15,9 +15,6 @@ chdir $SRC_DIR;
 
 my @git_files = `git ls-files`;
 
-my $re_blame = /^[a-f0-9]+\s+\(<([^>]+)[^)]+\)\s(.*)$/;
-#99594011 (<malcolm.tredinnick@gmail.com> 2008-08-09 14:40:51 +0000  1) Copyright (c) Dj...
-
 my $count = 0;
 my $total = scalar @git_files;
 
@@ -26,22 +23,48 @@ foreach my $file (@git_files) {
     next if -B $file;
 
     my $dir = `dirname $file`;
-    my @blame = `git blame -ew $file`;
-    my @out = ();
-    foreach my $line (@blame) {
-        chomp $line;
+    my @blocks = ();
+    my @blame = `git blame -w --porcelain $file`;
 
-        $line =~ /^[a-f0-9]+\s+\(<([^>]+)[^)]+\)\s(.*)$/;
-        if ($1) {
-            push @out, "<tr><td>$1</td><td>$2</td></tr>";
-        }
+    while (my ($block, $read) = read_blame_block(@blame)) {
+        push @blocks, $block;
+        splice @blame, 0, $read;
     }
-    `mkdir -p $DEST_DIR/$dir`;
-    open(my $fh, '>', "$DEST_DIR/$file") or die "cant open";
-    print $fh join '', ('<table>', @out, '</table>');
-    close $fh;
-
     print "processed $count/$total\r";
     $count +=1;
 }
 print "\n";
+
+sub read_blame_block {
+    my (@lines) = @_;
+
+    my $block = {
+        meta => {},
+        lines => [],
+    };
+    my $cursor = 0;
+    my $next_line_number = -1;
+    foreach my $line (@lines) {
+        chomp $line;
+
+        if ($line =~ /^([a-f0-9]+)\s(\d+)\s(\d+)(?:\s(\d+))?$/) {
+            last if $4 && $block->{length};
+            $block->{sha} = $1;
+            $next_line_number = $2;
+            $block->{length} = $4 if $4;
+        } elsif ($line =~ /^([a-z-]+)(?:\s(.*))?$/) {
+            $block->{meta}{$1} = $2;
+        } elsif ($line =~ /^\t(.*)/) {
+            push @{ $block->{lines} }, {
+                num => $next_line_number-0,
+                text => $1,
+            }
+        } else {
+            die "Cannot parse line $line"
+        }
+
+        $cursor += 1;
+    }
+
+    return $cursor ? ($block, $cursor) : ();
+}
