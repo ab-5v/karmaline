@@ -3,37 +3,55 @@
 use 5.12.2;
 use warnings;
 
-my ($SRC_DIR) = @ARGV;
+use Cwd;
+use Data::Dumper;
 
-`mkdir -p dest`;
-my $PWD = `pwd`;
-chomp $PWD;
-my $DEST_DIR = "$PWD/dest";
-say $DEST_DIR;
+sub main {
+    my @argv = @_;
 
-chdir $SRC_DIR;
+    my $blames = blame_git_tree($argv[0]);
 
-my @git_files = `git ls-files`;
-
-my $count = 0;
-my $total = scalar @git_files;
-
-foreach my $file (@git_files) {
-    chomp $file;
-    next if -B $file;
-
-    my $dir = `dirname $file`;
-    my @blocks = ();
-    my @blame = `git blame -w --porcelain $file`;
-
-    while (my ($block, $read) = read_blame_block(@blame)) {
-        push @blocks, $block;
-        splice @blame, 0, $read;
-    }
-    print "processed $count/$total\r";
-    $count +=1;
+    print Dumper($blames);
 }
-print "\n";
+
+sub blame_git_tree {
+    my $git_dir = shift;
+
+    my $cwd = cwd();
+    chdir $git_dir;
+
+    my @git_files = split /\n/, `git ls-files`;
+    my ($count, $total) = (0, scalar @git_files);
+
+    my %blames = ();
+
+    foreach my $file (@git_files) {
+        next if -B $file && $total--;
+        $blames{$file} = blame_file($file);
+
+        $count++;
+        print "Processed $count/$total\r";
+    }
+    print "\n";
+
+    chdir $cwd;
+
+    return \%blames;
+}
+
+sub blame_file {
+    my $file = shift;
+
+    my @blocks = ();
+    my @blames = `git blame -w --porcelain $file`;
+
+    while (my ($block, $cursor) = read_blame_block(@blames)) {
+        push @blocks, $block;
+        splice @blames, 0, $cursor;
+    }
+
+    return \@blocks;
+}
 
 sub read_blame_block {
     my (@lines) = @_;
@@ -68,3 +86,7 @@ sub read_blame_block {
 
     return $cursor ? ($block, $cursor) : ();
 }
+
+main(@ARGV);
+
+1;
