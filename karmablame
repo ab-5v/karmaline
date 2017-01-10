@@ -45,10 +45,18 @@ sub blame_git_tree {
 sub blame_file {
     my $file = shift;
 
+    my %meta = ();
     my @blocks = ();
     my @blames = `git blame -w --porcelain $file`;
 
     while (my ($block, $cursor) = read_blame_block(@blames)) {
+
+        if (%{ $block->{meta} }) {
+            $meta{$block->{sha}} = $block->{meta};
+        } else {
+            $block->{meta} = $meta{$block->{sha}};
+        }
+
         push @blocks, $block;
         splice @blames, 0, $cursor;
     }
