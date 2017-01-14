@@ -13,6 +13,8 @@ sub main {
     my $config = read_config($argv[1]);
     my $blames = blame_git_tree($argv[0]);
 
+    print_stats( calculate_stats($blames, $config) );
+
     foreach my $file ( keys %{ $blames } ) {
         my $html = generate_html( $file, $blames->{$file}, $config );
         write_html( cwd() . '/html', $file, $html );
@@ -116,6 +118,112 @@ sub read_blame_block {
     }
 
     return $cursor ? ($block, $cursor) : ();
+}
+
+sub calculate_stats {
+    my ($blames, $config) = @_;
+
+    my $stats = {
+        file => 0,
+        block => {},
+        karma => {},
+    };
+
+    my $grand_total = 0;
+
+    foreach my $file ( keys %{ $blames } ) {
+        my $total = 0;
+        my $acc_karma = 0;
+        my $with_karma = 0;
+
+        foreach my $block ( @{ $blames->{$file} } ) {
+            my $karma = get_karma($block, $config);
+            my $lines = $block->{length};
+
+            $total += $lines;
+
+            if ($karma) {
+                $acc_karma += $lines;
+                $with_karma += $lines;
+                $stats->{block}{ $lines }++;
+            } elsif ($acc_karma) {
+                $stats->{karma}{ $acc_karma }++;
+                $acc_karma = 0;
+            }
+        }
+
+        $stats->{karma}{ $acc_karma }++ if $acc_karma;
+        $stats->{file}++ if $total == $with_karma;
+
+        $grand_total += $total;
+    }
+
+    $stats->{total_lines} = $grand_total;
+    $stats->{total_files} = scalar keys %{ $blames };
+
+    my $karma_num;
+    my $block_num;
+
+    map { $karma_num += $_ * $stats->{karma}{$_} } keys %{ $stats->{karma} };
+    map { $block_num += $_ * $stats->{block}{$_} } keys %{ $stats->{block} };
+
+    die "Incorrect stats calculations $block_num != $karma_num" if $block_num != $karma_num;
+
+    $stats->{karma_lines} = $karma_num;
+
+    return $stats;
+}
+
+sub print_stats {
+    my ($stats) = @_;
+
+
+    sub _distribution {
+        my ($title, $data) = @_;
+        my @marks = (140, 70, 50, 30, 15, 7);
+
+        print $title;
+
+        foreach my $lines ( @marks ) {
+            my $karma_num = 0;
+            my $karma_set = 0;
+            foreach my $karma_lines ( keys %{ $data } ) {
+                next if $karma_lines < $lines;
+                $karma_set += $data->{ $karma_lines };
+                $karma_num += $karma_lines * $data->{ $karma_lines };
+            }
+            printf "\t%3u: %4u groups ( %6u lines)\n",
+                $lines,
+                $karma_set,
+                $karma_num;
+        }
+    }
+
+    printf "%u/%u files has 100%% good karma\n",
+        $stats->{file},
+        $stats->{total_files};
+
+    printf "%u%% of lines has good karma %u/%u\n",
+        $stats->{karma_lines}/$stats->{total_lines}*100,
+        $stats->{karma_lines},
+        $stats->{total_lines};
+
+    _distribution("Continuous groups larger that N lines:\n", $stats->{karma});
+    _distribution("Continuous groups larger that N lines from the same commit:\n", $stats->{block});
+
+}
+
+sub get_karma {
+    my ($block, $config) = @_;
+
+    my $author = $block->{meta}{'author-mail'};
+    my $summary = $block->{meta}{summary};
+
+    if ($summary =~ /\b#karma_(\d+)\b/) {
+        return $1;
+    } else {
+        return $config->{karma}{ $author } || 0;
+    }
 }
 
 sub write_html {
