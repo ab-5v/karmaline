@@ -4,16 +4,36 @@ use 5.12.2;
 use warnings;
 
 use Cwd;
+use JSON::PP;
 use Data::Dumper;
 
 sub main {
     my @argv = @_;
 
+    my $config = read_config($argv[1]);
     my $blames = blame_git_tree($argv[0]);
 
     foreach my $file ( keys %{ $blames } ) {
-        my $html = generate_html( $file, $blames->{$file} );
+        my $html = generate_html( $file, $blames->{$file}, $config );
         write_html( cwd() . '/html', $file, $html );
+    }
+}
+
+sub read_config() {
+    my $path = shift || cwd() . '/.karmaline';
+    my $json;
+
+    eval {
+        local $/ = undef;
+        open my $fh, '<', $path or die "Can't open $path";
+        $json = JSON::PP::decode_json(<$fh>);
+        close $fh;
+    };
+
+    if (!$json) {
+        die "Can't read config $path\n$@";
+    } else {
+        return $json;
     }
 }
 
@@ -113,7 +133,7 @@ sub write_html {
 }
 
 sub generate_html {
-    my ($file, $data) = @_;
+    my ($file, $data, $config) = @_;
 
     my @html = (
         '<!doctype html>',
@@ -128,15 +148,16 @@ sub generate_html {
         push @html, '<tbody class="blame-hunk">';
         push @html, '<tr class="blame-commit">',
                         '<td class="blame-commit-info" rowspan="' . (1+$block->{length}) . '">',
-							'<a href="#8663bc110305844b2f8b0829ee2ddfc5be61b758" class="blame-sha">',
+							'<a href="' . sprintf($config->{url}{commit}, $block->{sha}) . '" class="blame-sha">',
+							    $block->{sha},
 							'</a>',
                             '<span class="blame-commit-title">',
-                                '<a href="#8663bc110305844b2f8b0829ee2ddfc5be61b758" class="message" title="">',
+                                '<a href="' . sprintf($config->{url}{commit}, $block->{sha}) . '" class="message" title="">',
                                     $block->{meta}{summary},
                                 '</a>',
                             '</span>',
                             '<div class="blame-commit-meta">',
-                                '<a href="#" class="muted-link" rel="contributor">',
+                                '<a href="' . sprintf($config->{url}{author}, $block->{meta}{'author-mail'}) . '" class="muted-link" rel="contributor">',
                                     $block->{meta}{author},
                                 '</a> authored',
                                 '<relative-time datetime="2012-04-06T21:24:33Z" title="6 Apr 2012, 23:24 CEST">on 6 Apr 2012</relative-time>',

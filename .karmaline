@@ -1,0 +1,9 @@
+{
+    "url": {
+        "commit": "https://github.com/artjock/karmaline/commit/%s",
+        "author": "https://github.com/%s"
+    },
+    "karma": {
+        "artjock@gmail.com": 10
+    }
+}
