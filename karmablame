@@ -81,7 +81,7 @@ sub read_blame_block {
             $block->{sha} = $1;
             $next_line_number = $2;
             $block->{length} = $4 if $4;
-        } elsif ($line =~ /^([a-z-]+)(?:\s(.*))?$/) {
+        } elsif ($line =~ /^([a-z-]+)(?:\s<?(.*?)>?)?$/) {
             $block->{meta}{$1} = $2;
         } elsif ($line =~ /^\t(.*)/) {
             push @{ $block->{lines} }, {
