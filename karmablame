@@ -180,23 +180,27 @@ sub print_stats {
 
 
     sub _distribution {
-        my ($title, $data) = @_;
-        my @marks = (140, 70, 50, 30, 15, 7);
+        my ($title, $data, $total_lines) = @_;
+        my @marks = (140, 70, 50, 30, 15, 7, 3);
 
         print $title;
 
         foreach my $lines ( @marks ) {
+            my $set_num = 0;
             my $karma_num = 0;
             my $karma_set = 0;
             foreach my $karma_lines ( keys %{ $data } ) {
+                $set_num += $data->{ $karma_lines };
                 next if $karma_lines < $lines;
                 $karma_set += $data->{ $karma_lines };
                 $karma_num += $karma_lines * $data->{ $karma_lines };
             }
-            printf "\t%3u: %4u groups ( %6u lines)\n",
+            printf "\t%3u: %4u groups (%3u%%) %6u lines (%3u%%)\n",
                 $lines,
                 $karma_set,
-                $karma_num;
+                100*$karma_set/$set_num,
+                $karma_num,
+                100*$karma_num/$total_lines;
         }
     }
 
@@ -209,8 +213,8 @@ sub print_stats {
         $stats->{karma_lines},
         $stats->{total_lines};
 
-    _distribution("Continuous groups larger that N lines:\n", $stats->{karma});
-    _distribution("Continuous groups larger that N lines from the same commit:\n", $stats->{block});
+    _distribution("Continuous groups larger that N lines:\n", $stats->{karma}, $stats->{total_lines});
+    _distribution("Continuous groups larger that N lines from the same commit:\n", $stats->{block}, $stats->{total_lines});
 
 }
 
