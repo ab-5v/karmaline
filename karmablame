@@ -6,6 +6,7 @@ use warnings;
 use Cwd;
 use JSON::PP;
 use Data::Dumper;
+use POSIX qw(strftime);
 
 sub main {
     my @argv = @_;
@@ -257,7 +258,7 @@ sub generate_html {
         push @html, '<tr class="blame-commit">',
                         '<td class="blame-commit-info" rowspan="' . (1+$block->{length}) . '">',
 							'<a href="' . sprintf($config->{url}{commit}, $block->{sha}) . '" class="blame-sha">',
-							    $block->{sha},
+							    substr($block->{sha}, 0, 10),
 							'</a>',
                             '<span class="blame-commit-title">',
                                 '<a href="' . sprintf($config->{url}{commit}, $block->{sha}) . '" class="message" title="">',
@@ -267,16 +268,20 @@ sub generate_html {
                             '<div class="blame-commit-meta">',
                                 '<a href="' . sprintf($config->{url}{author}, $block->{meta}{'author-mail'}) . '" class="muted-link" rel="contributor">',
                                     $block->{meta}{author},
-                                '</a> authored',
-                                '<relative-time datetime="2012-04-06T21:24:33Z" title="6 Apr 2012, 23:24 CEST">on 6 Apr 2012</relative-time>',
+                                '</a> authored ',
+                                '<span title="' . strftime("%d %b %Y, %H:%M:%S", localtime($block->{meta}{'author-time'}))  . '">',
+                                    strftime("%d %b %Y", localtime($block->{meta}{'author-time'})),
+                                '</span>',
                             '</div>',
                         '</td>',
                     '</tr>';
         foreach my $line ( @{ $block->{lines} } ) {
             push @html, '<tr class="blame-line">',
-                            '<td class="line-age"></td>',
-                            '<td class="blob-num blame-blob-num" id="#' . $line->{num} . '">',
-                                $line->{num},
+                            '<td class="line-age karma" data-karma="' . get_karma($block, $config) . '"></td>',
+                            '<td class="blob-num blame-blob-num" id="L' . $line->{num} . '">',
+                                '<a class="blob-num" href="#L' . $line->{num} . '">',
+                                    $line->{num},
+                                '</a>',
                             '</td>',
                             '<td class="blob-code blob-code-inner">',
                                 $line->{code},
