@@ -102,7 +102,7 @@ sub read_blame_block {
         if ($line =~ /^([a-f0-9]+)\s(\d+)\s(\d+)(?:\s(\d+))?$/) {
             last if $4 && $block->{length};
             $block->{sha} = $1;
-            $next_line_number = $2;
+            $next_line_number = $3;
             $block->{length} = $4 if $4;
         } elsif ($line =~ /^([a-z-]+)(?:\s<?(.*?)>?)?$/) {
             $block->{meta}{$1} = $2;
