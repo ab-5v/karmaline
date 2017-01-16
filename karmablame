@@ -18,7 +18,7 @@ sub main {
 
     foreach my $file ( keys %{ $blames } ) {
         my $html = generate_html( $file, $blames->{$file}, $config );
-        write_html( cwd() . '/html', $file, $html );
+        write_html( cwd() . '/html', $file, $html, $config->{file}{extension} || '');
     }
 }
 
@@ -232,7 +232,7 @@ sub get_karma {
 }
 
 sub write_html {
-    my ($root, $file, $html) = @_;
+    my ($root, $file, $html, $extension) = @_;
     my $file_dir = '';
 
     if ($file =~ /^(.*?)\/[^\/]+$/) {
@@ -240,7 +240,7 @@ sub write_html {
     }
     `mkdir -p $root/$file_dir`;
 
-    open(my $fh, '>', "$root/$file.html");
+    open(my $fh, '>', "$root/$file$extension");
     print $fh $html;
     close($fh);
 }

@@ -1,4 +1,7 @@
 {
+    "file": {
+        "extension": ".html"
+    },
     "url": {
         "commit": "https://github.com/artjock/karmaline/commit/%s",
         "author": "https://github.com/%s"
