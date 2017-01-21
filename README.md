@@ -11,17 +11,17 @@ Blames your git repository and genereates HTML representation, where some karma 
 That will output some stats:
 
 ```
-Processed 134/134
-68/134 files has 100% good karma
-27% of lines has good karma 1681/6128
-Continuous groups larger that N lines:
-	140:    0 groups (  0%)      0 lines (  0%)
-	 70:    2 groups (  2%)    166 lines (  2%)
-	 50:    3 groups (  3%)    222 lines (  3%)
-	 30:   18 groups ( 18%)    796 lines ( 12%)
-	 15:   45 groups ( 45%)   1340 lines ( 21%)
-	  7:   66 groups ( 66%)   1553 lines ( 25%)
-	  3:   93 groups ( 93%)   1672 lines ( 27%)
+Processed 151/151
+42% files have absolutely good karma (64/151)
+24% of lines have good karma (1574/6443)
+Continuous groups larger that N lines (out of 125):
+	140:   0% groups (     0)   0% lines (       0)
+	 70:   1% groups (     2)   2% lines (     166)
+	 50:   1% groups (     2)   2% lines (     166)
+	 30:  11% groups (    14)   9% lines (     643)
+	 15:  30% groups (    38)  17% lines (    1123)
+	  7:  52% groups (    65)  21% lines (    1380)
+	  3:  83% groups (   104)  23% lines (    1542)
 ```
 
 And generate HTML representation in `html` folder.

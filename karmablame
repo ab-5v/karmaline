@@ -183,38 +183,41 @@ sub print_stats {
         my ($title, $data, $total_lines) = @_;
         my @marks = (140, 70, 50, 30, 15, 7, 3);
 
-        print $title;
+        my $set_num = 0;
+        foreach my $karma_lines ( keys %{ $data } ) {
+            $set_num += $data->{ $karma_lines };
+        }
+        printf $title, $set_num;
 
         foreach my $lines ( @marks ) {
-            my $set_num = 0;
             my $karma_num = 0;
             my $karma_set = 0;
             foreach my $karma_lines ( keys %{ $data } ) {
-                $set_num += $data->{ $karma_lines };
                 next if $karma_lines < $lines;
                 $karma_set += $data->{ $karma_lines };
                 $karma_num += $karma_lines * $data->{ $karma_lines };
             }
-            printf "\t%3u: %4u groups (%3u%%) %6u lines (%3u%%)\n",
+            printf "\t%3u: %3u%% groups (%6u) %3u%% lines (%8u)\n",
                 $lines,
-                $karma_set,
                 100*$karma_set/$set_num,
-                $karma_num,
-                100*$karma_num/$total_lines;
+                $karma_set,
+                100*$karma_num/$total_lines,
+                $karma_num;
         }
     }
 
-    printf "%u/%u files has 100%% good karma\n",
+    printf "%u%% files has absolutely good karma (%u/%u) \n",
+        $stats->{file}/$stats->{total_files}*100,
         $stats->{file},
         $stats->{total_files};
 
-    printf "%u%% of lines has good karma %u/%u\n",
+    printf "%u%% of lines has good karma (%u/%u)\n",
         $stats->{karma_lines}/$stats->{total_lines}*100,
         $stats->{karma_lines},
         $stats->{total_lines};
 
-    _distribution("Continuous groups larger that N lines:\n", $stats->{karma}, $stats->{total_lines});
-    _distribution("Continuous groups larger that N lines from the same commit:\n", $stats->{block}, $stats->{total_lines});
+    _distribution("Continuous groups larger that N lines (out of %u):\n", $stats->{karma}, $stats->{total_lines});
+    _distribution("Continuous groups larger that N lines from the same commit (out of %u):\n", $stats->{block}, $stats->{total_lines});
 
 }
 
